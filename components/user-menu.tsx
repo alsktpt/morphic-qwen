@@ -1,8 +1,8 @@
 'use client'
 
+import { useEffect,useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-import { User } from '@supabase/supabase-js'
 import { Link2, LogOut, Palette } from 'lucide-react'
 
 import { createClient } from '@/lib/supabase/client'
@@ -25,15 +25,46 @@ import { ExternalLinkItems } from './external-link-items'
 import { ThemeMenuItems } from './theme-menu-items'
 
 interface UserMenuProps {
-  user: User
+  compact?: boolean
 }
 
-export default function UserMenu({ user }: UserMenuProps) {
+export default function UserMenu({ compact = false }: UserMenuProps) {
   const router = useRouter()
-  const userName =
-    user.user_metadata?.full_name || user.user_metadata?.name || 'User'
-  const avatarUrl =
-    user.user_metadata?.avatar_url || user.user_metadata?.picture
+  const [userData, setUserData] = useState<{
+    userName: string
+    avatarUrl: string | undefined
+    userEmail: string
+  } | null>(null)
+
+  useEffect(() => {
+    const getUserData = async () => {
+      const supabase = createClient()
+      const {
+        data: { user }
+      } = await supabase.auth.getUser()
+      if (user) {
+        const userName =
+          user.user_metadata?.full_name || user.user_metadata?.name || 'User'
+        const avatarUrl =
+          user.user_metadata?.avatar_url || user.user_metadata?.picture
+        const userEmail = user.email || ''
+        setUserData({ userName, avatarUrl, userEmail })
+      }
+    }
+    getUserData()
+  }, [])
+
+  if (!userData) {
+    return (
+      <Button variant="ghost" className="relative h-6 w-6 rounded-full">
+        <Avatar className="h-6 w-6">
+          <AvatarFallback>U</AvatarFallback>
+        </Avatar>
+      </Button>
+    )
+  }
+
+  const { userName, avatarUrl, userEmail } = userData
 
   const getInitials = (name: string, email: string | undefined) => {
     if (name && name !== 'User') {
@@ -62,7 +93,7 @@ export default function UserMenu({ user }: UserMenuProps) {
         <Button variant="ghost" className="relative h-6 w-6 rounded-full">
           <Avatar className="h-6 w-6">
             <AvatarImage src={avatarUrl} alt={userName} />
-            <AvatarFallback>{getInitials(userName, user.email)}</AvatarFallback>
+            <AvatarFallback>{getInitials(userName, userEmail)}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
@@ -73,7 +104,7 @@ export default function UserMenu({ user }: UserMenuProps) {
               {userName}
             </p>
             <p className="text-xs leading-none text-muted-foreground truncate">
-              {user.email}
+              {userEmail}
             </p>
           </div>
         </DropdownMenuLabel>

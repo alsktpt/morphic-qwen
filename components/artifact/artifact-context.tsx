@@ -5,7 +5,6 @@ import {
   ReactNode,
   useCallback,
   useContext,
-  useEffect,
   useReducer
 } from 'react'
 
@@ -59,7 +58,7 @@ const ArtifactContext = createContext<ArtifactContextValue | undefined>(
 
 export function ArtifactProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(artifactReducer, initialState)
-  const { setOpen, open: sidebarOpen } = useSidebar()
+  const { open: sidebarOpen } = useSidebar()
 
   const close = useCallback(() => {
     dispatch({ type: 'CLOSE' })
@@ -69,16 +68,8 @@ export function ArtifactProvider({ children }: { children: ReactNode }) {
     }, ANIMATION_DURATION)
   }, [])
 
-  // Close artifact when sidebar opens
-  useEffect(() => {
-    if (sidebarOpen && state.isOpen) {
-      close()
-    }
-  }, [sidebarOpen, state.isOpen, close])
-
   const open = (part: Part) => {
     dispatch({ type: 'OPEN', payload: part })
-    setOpen(false)
   }
 
   return (

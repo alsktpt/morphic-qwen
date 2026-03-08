@@ -14,7 +14,7 @@ import { useArtifact } from './artifact-context'
 
 const DEFAULT_WIDTH = 500
 const MIN_WIDTH = 320
-const MAX_WIDTH = 800
+const MAX_WIDTH = 1000
 const CHAT_MIN_WIDTH = 360
 const RESIZE_OVERLAY_Z_INDEX = 9999
 

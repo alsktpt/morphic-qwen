@@ -1,9 +1,7 @@
 import { generateId } from '@/lib/db/schema'
 import type {
-  UIDataTypes,
   UIMessage,
-  UIMessageMetadata,
-  UITools
+  UIMessageMetadata
 } from '@/lib/types/ai'
 import type { DynamicToolPart } from '@/lib/types/dynamic-tools'
 import type {
@@ -290,7 +288,7 @@ export function mapUIMessagePartsToDBParts(
         }
         return createToolPartMapping(basePart, part, 'fetch')
 
-      case 'tool-question':
+      case 'tool-askQuestion':
         if (!isExtendedToolPart(part)) {
           console.error('Invalid extended tool part:', part)
           return null
@@ -388,7 +386,16 @@ export function mapDBPartToUIMessagePart(
     default:
       // Tool parts
       if (part.type.startsWith('tool-')) {
-        const toolName = part.type.substring(5) // Remove 'tool-' prefix
+        const toolNameFromType = part.type.substring(5) // Remove 'tool-' prefix
+        // Map tool type name to database column name
+        const toolNameMap: Record<string, string> = {
+          'search': 'search',
+          'fetch': 'fetch',
+          'askQuestion': 'question',
+          'todoWrite': 'todoWrite',
+          'todoRead': 'todoRead'
+        }
+        const toolName = toolNameMap[toolNameFromType] || toolNameFromType
         const inputColumn =
           `tool_${toolName}_input` as keyof DBMessagePartSelect
         const outputColumn =
@@ -490,7 +497,7 @@ export function mapDBPartToUIMessagePart(
           }
         }
 
-        if (toolName === 'question') {
+        if (toolName === 'question' || toolName === 'askQuestion') {
           if (!part.tool_state) {
             throw new Error(`tool_state is undefined for ${toolName}`)
           }
@@ -498,21 +505,21 @@ export function mapDBPartToUIMessagePart(
           switch (part.tool_state) {
             case 'input-streaming':
               return {
-                type: 'tool-question',
+                type: 'tool-askQuestion',
                 state: 'input-streaming',
                 toolCallId: part.tool_toolCallId || '',
                 input: part.tool_question_input!
               }
             case 'input-available':
               return {
-                type: 'tool-question',
+                type: 'tool-askQuestion',
                 state: 'input-available',
                 toolCallId: part.tool_toolCallId || '',
                 input: part.tool_question_input!
               }
             case 'output-available':
               return {
-                type: 'tool-question',
+                type: 'tool-askQuestion',
                 state: 'output-available',
                 toolCallId: part.tool_toolCallId || '',
                 input: part.tool_question_input!,
@@ -520,7 +527,7 @@ export function mapDBPartToUIMessagePart(
               }
             case 'output-error':
               return {
-                type: 'tool-question',
+                type: 'tool-askQuestion',
                 state: 'output-error',
                 toolCallId: part.tool_toolCallId || '',
                 input: part.tool_question_input!,

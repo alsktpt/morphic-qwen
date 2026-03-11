@@ -7,10 +7,10 @@ import { getQuestionSchemaForModel } from '@/lib/schema/question'
  */
 export function createQuestionTool(fullModel: string) {
   return tool({
-    description:
-      'Ask a clarifying question with multiple options when more information is needed',
-    inputSchema: getQuestionSchemaForModel(fullModel)
-    // execute function removed to enable frontend confirmation
+      description:
+        'Ask a clarifying question with multiple options when more information is needed',
+      inputSchema: getQuestionSchemaForModel(fullModel)
+      // execute function removed to enable frontend confirmation
   })
 }
 

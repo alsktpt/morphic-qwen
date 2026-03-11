@@ -14,7 +14,6 @@ import { Input } from '@/components/ui/input'
 interface QuestionConfirmationProps {
   toolInvocation: ToolPart<'askQuestion'>
   onConfirm: (toolCallId: string, approved: boolean, response?: any) => void
-  isCompleted?: boolean
 }
 
 interface QuestionOption {
@@ -38,8 +37,7 @@ interface QuestionOutput {
 
 export function QuestionConfirmation({
   toolInvocation,
-  onConfirm,
-  isCompleted = false
+  onConfirm
 }: QuestionConfirmationProps) {
   const input = (toolInvocation.input || {}) as QuestionInput
   const {
@@ -58,8 +56,6 @@ export function QuestionConfirmation({
 
   const [selectedOptions, setSelectedOptions] = useState<string[]>([])
   const [inputText, setInputText] = useState('')
-  const [completed, setCompleted] = useState(isCompleted)
-  const [skipped, setSkipped] = useState(false)
 
   const isButtonDisabled =
     selectedOptions.length === 0 && (!allowsInput || inputText.trim() === '')
@@ -79,8 +75,6 @@ export function QuestionConfirmation({
   }
 
   const handleSkip = () => {
-    setSkipped(true)
-    setCompleted(true)
     onConfirm(toolInvocation.toolCallId, false, { skipped: true })
   }
 
@@ -94,7 +88,6 @@ export function QuestionConfirmation({
     }
 
     onConfirm(toolInvocation.toolCallId, true, response)
-    setCompleted(true)
   }
 
   // Get options to display (from result or local state)
@@ -118,10 +111,7 @@ export function QuestionConfirmation({
   // Check if question was skipped
   const wasSkipped = (): boolean => {
     const result = resultData as QuestionOutput | null
-    if (result && result.skipped) {
-      return true
-    }
-    return skipped
+    return result?.skipped ?? false
   }
 
   const updatedQuery = () => {
@@ -142,8 +132,8 @@ export function QuestionConfirmation({
     return [optionsText, inputTextDisplay].filter(Boolean).join(' | ')
   }
 
-  // Show result view if completed or if tool has result state
-  if (completed || toolInvocation.state === 'output-available') {
+  // Show result view if tool has result state
+  if (toolInvocation.state === 'output-available') {
     const isSkipped = wasSkipped()
 
     return (

@@ -117,18 +117,31 @@ export async function createEphemeralChatStreamResponse(
 
         const responseMessages = (await result.response).messages
         if (responseMessages && responseMessages.length > 0) {
-          const lastUserMessage = [...modelMessages]
-            .reverse()
-            .find(msg => msg.role === 'user')
-          const messagesForQuestions = lastUserMessage
-            ? [lastUserMessage, ...responseMessages]
-            : responseMessages
-          await streamRelatedQuestions(
-            writer,
-            messagesForQuestions,
-            abortSignal,
-            parentTraceId
-          )
+          // Check if the last message has pending tool calls (client-side tools waiting for user)
+          const lastResponse = responseMessages[responseMessages.length - 1]
+          const hasPendingToolCall =
+            lastResponse?.role === 'assistant' &&
+            Array.isArray(lastResponse.content) &&
+            lastResponse.content.some((part: any) => part.type === 'tool-call') &&
+            !lastResponse.content.some((part: any) => part.type === 'tool-result')
+
+          if (hasPendingToolCall) {
+            // Agent paused waiting for client-side tool result, skip related questions
+            console.log('[Related Questions] Skipped - pending client-side tool call')
+          } else {
+            const lastUserMessage = [...modelMessages]
+              .reverse()
+              .find(msg => msg.role === 'user')
+            const messagesForQuestions = lastUserMessage
+              ? [lastUserMessage, ...responseMessages]
+              : responseMessages
+            await streamRelatedQuestions(
+              writer,
+              messagesForQuestions,
+              abortSignal,
+              parentTraceId
+            )
+          }
         }
       } finally {
         if (langfuse) {

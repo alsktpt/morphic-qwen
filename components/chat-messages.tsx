@@ -27,6 +27,7 @@ interface ChatMessagesProps {
   chatId?: string
   isGuest?: boolean
   addToolResult?: (params: { toolCallId: string; result: any }) => void
+  addToolOutput?: (params: { tool: string; toolCallId: string; output: any }) => void
   /** Ref for the scroll container */
   scrollContainerRef: React.RefObject<HTMLDivElement>
   onUpdateMessage?: (messageId: string, newContent: string) => Promise<void>
@@ -41,6 +42,7 @@ export function ChatMessages({
   chatId,
   isGuest = false,
   addToolResult,
+  addToolOutput,
   scrollContainerRef,
   onUpdateMessage,
   reload,
@@ -196,6 +198,7 @@ export function ChatMessages({
                 isGuest={isGuest}
                 status={status}
                 addToolResult={addToolResult}
+                addToolOutput={addToolOutput}
                 onUpdateMessage={onUpdateMessage}
                 reload={reload}
                 citationMaps={allCitationMaps}
@@ -223,6 +226,7 @@ export function ChatMessages({
                     isGuest={isGuest}
                     status={status}
                     addToolResult={addToolResult}
+                    addToolOutput={addToolOutput}
                     onUpdateMessage={onUpdateMessage}
                     reload={reload}
                     isLatestMessage={isLatestMessage}

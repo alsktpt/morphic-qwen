@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { useChat } from '@ai-sdk/react'
-import { DefaultChatTransport } from 'ai'
+import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls } from 'ai'
 import { toast } from 'sonner'
 
 import { generateId } from '@/lib/db/schema'
@@ -86,9 +86,10 @@ export function Chat({
     sendMessage,
     regenerate,
     addToolResult,
+    addToolOutput,
     error
   } = useChat({
-    id: chatId, // use the client-generated or provided chatId
+    id: chatId,
     transport: new DefaultChatTransport({
       api: '/api/chat',
       prepareSendMessagesRequest: ({ messages, trigger, messageId }) => {
@@ -120,6 +121,21 @@ export function Chat({
         }
       }
     }),
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
+    async onToolCall({ toolCall }) {
+      // Skip dynamic tools - they're handled separately
+      if (toolCall.dynamic) {
+        return
+      }
+
+      // askQuestion is an interactive tool - UI handles the response
+      // No auto-execution here, just return to let UI render
+      if (toolCall.toolName === 'askQuestion') {
+        return
+      }
+
+      // Auto-execute other client-side tools here if needed
+    },
     messages: savedMessages,
     onFinish: () => {
       window.dispatchEvent(new CustomEvent('chat-history-updated'))
@@ -466,6 +482,7 @@ export function Chat({
         onUpdateMessage={handleUpdateAndReloadMessage}
         reload={handleReloadFrom}
         error={error}
+        addToolOutput={addToolOutput}
       />
       <ChatPanel
         chatId={chatId}

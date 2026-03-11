@@ -67,6 +67,7 @@ type Props = {
   onQuerySelect: (query: string) => void
   status?: UseChatHelpers<UIMessage<unknown, UIDataTypes, UITools>>['status']
   addToolResult?: (params: { toolCallId: string; result: any }) => void
+  addToolOutput?: (params: { tool: string; toolCallId: string; output: any }) => void
   parts?: MessagePart[]
   hasSubsequentText?: boolean
 }
@@ -188,6 +189,7 @@ function RenderPart({
   handleAccordionChange,
   status,
   addToolResult,
+  addToolOutput,
   onQuerySelect
 }: {
   part: MessagePart
@@ -204,6 +206,7 @@ function RenderPart({
   handleAccordionChange: (id: string, open: boolean, isSingle: boolean) => void
   status?: any
   addToolResult?: (params: { toolCallId: string; result: any }) => void
+  addToolOutput?: (params: { tool: string; toolCallId: string; output: any }) => void
   onQuerySelect: (query: string) => void
 }) {
   const hasSubsequent = hasNext || hasSubsequentContent
@@ -239,6 +242,7 @@ function RenderPart({
         }
         status={status}
         addToolResult={addToolResult}
+        addToolOutput={addToolOutput}
         onQuerySelect={onQuerySelect}
         borderless={!isSingle}
         isFirst={isFirstGroup && partIndex === 0}
@@ -298,6 +302,7 @@ export function ResearchProcessSection({
   onQuerySelect,
   status,
   addToolResult,
+  addToolOutput,
   parts: partsOverride,
   hasSubsequentText = false
 }: Props) {
@@ -370,6 +375,7 @@ export function ResearchProcessSection({
                       handleAccordionChange={handleAccordionChange}
                       status={status}
                       addToolResult={addToolResult}
+                      addToolOutput={addToolOutput}
                       onQuerySelect={onQuerySelect}
                     />
                   )

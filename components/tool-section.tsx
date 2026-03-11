@@ -1,5 +1,6 @@
 'use client'
 
+import * as React from 'react'
 import { UseChatHelpers } from '@ai-sdk/react'
 
 import type { ToolPart, UIDataTypes, UIMessage, UITools } from '@/lib/types/ai'
@@ -15,6 +16,7 @@ interface ToolSectionProps {
   onOpenChange: (open: boolean) => void
   status?: UseChatHelpers<UIMessage<unknown, UIDataTypes, UITools>>['status']
   addToolResult?: (params: { toolCallId: string; result: any }) => void
+  addToolOutput?: (params: { tool: string; toolCallId: string; output: any }) => void
   onQuerySelect: (query: string) => void
   borderless?: boolean
   isFirst?: boolean
@@ -27,25 +29,38 @@ export function ToolSection({
   onOpenChange,
   status,
   addToolResult,
+  addToolOutput,
   onQuerySelect,
   borderless = false,
   isFirst = false,
   isLast = false
 }: ToolSectionProps) {
+  // Debug: Log tool rendering with count
+  const renderCount = React.useRef(0)
+  renderCount.current++
+
+  if (tool.type === 'tool-askQuestion') {
+    console.log(`[ToolSection] askQuestion render #${renderCount.current}:`, {
+      state: tool.state,
+      hasAddToolOutput: !!addToolOutput,
+      toolCallId: tool.toolCallId
+    })
+  }
   // Special handling for ask_question tool
   if (tool.type === 'tool-askQuestion') {
-    // When waiting for user input
+    // When waiting for user input - use addToolOutput for client-side tools
     if (
       (tool.state === 'input-streaming' || tool.state === 'input-available') &&
-      addToolResult
+      addToolOutput
     ) {
       return (
         <QuestionConfirmation
           toolInvocation={tool as ToolPart<'askQuestion'>}
           onConfirm={(toolCallId, approved, response) => {
-            addToolResult({
+            addToolOutput({
+              tool: 'askQuestion',
               toolCallId,
-              result: approved
+              output: approved
                 ? response
                 : {
                     declined: true,
@@ -63,7 +78,6 @@ export function ToolSection({
       return (
         <QuestionConfirmation
           toolInvocation={tool as ToolPart<'askQuestion'>}
-          isCompleted={true}
           onConfirm={() => {}} // Not used in result display mode
         />
       )

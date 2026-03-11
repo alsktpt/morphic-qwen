@@ -94,23 +94,23 @@ export function createResearcher({
     // Configure based on search mode
     switch (searchMode) {
       case 'quick':
-        console.log(
-          '[Researcher] Quick mode: maxSteps=20, tools=[search, fetch]'
-        )
         systemPrompt = QUICK_MODE_PROMPT
-        activeToolsList = ['search', 'fetch']
+        activeToolsList = ['search', 'fetch', 'askQuestion']
         maxSteps = 20
+        console.log(
+          `[Researcher] Quick mode: maxSteps=${maxSteps}, modelType=${modelType}, tools=[${activeToolsList.join(', ')}]`
+        )
         searchTool = wrapSearchToolForQuickMode(originalSearchTool)
         break
 
       case 'adaptive':
       default:
         systemPrompt = getAdaptiveModePrompt()
-        activeToolsList = ['search', 'fetch', 'todoWrite']
-        console.log(
-          `[Researcher] Adaptive mode: maxSteps=50, modelType=${modelType}, tools=[${activeToolsList.join(', ')}]`
-        )
+        activeToolsList = ['search', 'fetch', 'todoWrite', 'askQuestion']
         maxSteps = 50
+        console.log(
+          `[Researcher] Adaptive mode: maxSteps=${maxSteps}, modelType=${modelType}, tools=[${activeToolsList.join(', ')}]`
+        )
         searchTool = originalSearchTool
         break
     }

@@ -25,6 +25,7 @@ interface RenderMessageProps {
   isGuest?: boolean
   status?: UseChatHelpers<UIMessage<unknown, UIDataTypes, UITools>>['status']
   addToolResult?: (params: { toolCallId: string; result: any }) => void
+  addToolOutput?: (params: { tool: string; toolCallId: string; output: any }) => void
   onUpdateMessage?: (messageId: string, newContent: string) => Promise<void>
   reload?: (messageId: string) => Promise<void | string | null | undefined>
   isLatestMessage?: boolean
@@ -41,6 +42,7 @@ export function RenderMessage({
   isGuest = false,
   status,
   addToolResult,
+  addToolOutput,
   onUpdateMessage,
   reload,
   isLatestMessage = false,
@@ -96,6 +98,7 @@ export function RenderMessage({
         onQuerySelect={onQuerySelect}
         status={status}
         addToolResult={addToolResult}
+        addToolOutput={addToolOutput}
       />
     )
     buffer = []
@@ -121,6 +124,7 @@ export function RenderMessage({
               onQuerySelect={onQuerySelect}
               status={status}
               addToolResult={addToolResult}
+              addToolOutput={addToolOutput}
               hasSubsequentText={true}
             />
           )

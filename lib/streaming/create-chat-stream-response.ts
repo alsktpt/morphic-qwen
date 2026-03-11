@@ -126,6 +126,26 @@ export async function createChatStreamResponse(
         const messagesToModel = await prepareMessages(context, message)
         perfTime('prepareMessages completed (stream)', prepareStart)
 
+        // Filter out assistant messages that contain pending askQuestion tool calls
+        // These occur when the user didn't respond to askQuestion before sending a new message
+        const cleanedMessages = messagesToModel.filter(msg => {
+          if (msg.role !== 'assistant') return true
+          const parts = msg.parts || []
+          // Check if message contains pending askQuestion (input-streaming/input-available state)
+          const hasPendingAskQuestion = parts.some((part: any) =>
+            part.type === 'tool-askQuestion' &&
+            (part.state === 'input-streaming' || part.state === 'input-available')
+          )
+          if (hasPendingAskQuestion) {
+            console.log('[Chat Stream] Filtered out assistant message with pending askQuestion:', {
+              messageId: msg.id,
+              parts: parts.map((p: any) => ({ type: p.type, state: p.state }))
+            })
+            return false
+          }
+          return true
+        })
+
         // Get the researcher agent with parent trace ID, search mode, and model type
         const researchAgent = researcher({
           model: context.modelId,
@@ -140,8 +160,8 @@ export async function createChatStreamResponse(
         // See: https://github.com/vercel/ai/issues/11036
         const isOpenAI = context.modelId.startsWith('openai:')
         const messagesToConvert = isOpenAI
-          ? stripReasoningParts(messagesToModel)
-          : messagesToModel
+          ? stripReasoningParts(cleanedMessages)
+          : cleanedMessages
 
         // Convert to model messages and apply context window management
         let modelMessages = await convertToModelMessages(messagesToConvert)
@@ -210,20 +230,33 @@ export async function createChatStreamResponse(
         perfTime('researchAgent.stream completed', llmStart)
         // Generate related questions
         if (responseMessages && responseMessages.length > 0) {
-          // Find the last user message
-          const lastUserMessage = [...modelMessages]
-            .reverse()
-            .find(msg => msg.role === 'user')
-          const messagesForQuestions = lastUserMessage
-            ? [lastUserMessage, ...responseMessages]
-            : responseMessages
+          // Check if the last message has pending tool calls (client-side tools waiting for user)
+          const lastResponse = responseMessages[responseMessages.length - 1]
+          const hasPendingToolCall =
+            lastResponse?.role === 'assistant' &&
+            Array.isArray(lastResponse.content) &&
+            lastResponse.content.some((part: any) => part.type === 'tool-call') &&
+            !lastResponse.content.some((part: any) => part.type === 'tool-result')
 
-          await streamRelatedQuestions(
-            writer,
-            messagesForQuestions,
-            abortSignal,
-            parentTraceId
-          )
+          if (hasPendingToolCall) {
+            // Agent paused waiting for client-side tool result, skip related questions
+            console.log('[Related Questions] Skipped - pending client-side tool call')
+          } else {
+            // Find the last user message from model messages (ModelMessage format)
+            const lastUserMessage = [...modelMessages]
+              .reverse()
+              .find(msg => msg.role === 'user')
+            const messagesForQuestions = lastUserMessage
+              ? [lastUserMessage, ...responseMessages]
+              : responseMessages
+
+            await streamRelatedQuestions(
+              writer,
+              messagesForQuestions,
+              abortSignal,
+              parentTraceId
+            )
+          }
         }
       } catch (error) {
         console.error('Stream execution error:', error)
